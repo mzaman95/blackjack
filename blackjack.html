@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Blackjack</title>
+  <link rel="stylesheet" href="blackjack-style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@200&display=swap" rel="stylesheet">
+</head>
+
+<body>
+  <h1 id="gameTitle">B L A C K J A C K</h1>
+  <div id="actions"></div>
+  <div class="row">
+    <div class="column">
+      <h2>Y O U</h2>
+      <p>Current total: <span id="displayPlayerTotal"></span></p>
+      <div id="playerCards"></div>
+    </div>
+    <div class="column">
+      <h2>D E A L E R</h2>
+      <p>Current total: <span id="displayDealerTotal"></span></p>
+      <div id="dealerCards"></div>
+      <div id="facedown"></div>
+    </div>
+  </div>
+
+  <!-- The bet modal: Prompts the user to place their bet amount from their wallet-->
+  <div id="betModal" class="modal">
+    <div class="modalContent">
+      <h1>Place Your Bet</h1>
+      <form id="betForm">
+        <label for="betAmount">How much money would you like to bet?</label><br>
+        $ <input type="number" id="betAmount" name="betAmount" min="0" value="0"><br>
+        <button id="betSubmitButton" type="submit">Submit</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    window.onload = () => {
+      // The bet modal*******************************************************
+      var modal = document.getElementById("betModal");
+      var betSubmitButton = document.getElementById("betSubmitButton");
+      var betAmountHidden = document.createElement("p");
+
+      betSubmitButton.onclick = function (event) {
+        modal.style.display = "none";
+        event.preventDefault();
+      }
+
+      // Create card deck********************************************
+      var deck = [];
+      var suits = ["diamonds", "clubs", "hearts", "spades"];
+      var faceCards = ["J", "Q", "K"];
+      for (let i = 0; i < suits.length; i++) {
+
+        // Create number cards
+        for (let j = 2; j <= 10; j++) {
+          deck.push({ text: j, value: j, suit: suits[i] });
+        };
+
+        // Create face cards
+        for (let k = 0; k < faceCards.length; k++) {
+          deck.push({ text: faceCards[k], value: 10, suit: suits[i] });
+        };
+
+        // Create A card - default value is 1
+        deck.push({ text: "A", value: 1, suit: suits[i] });
+      }
+
+      // Generate random card to select random card from the deck:
+      const getRandomCard = () => {
+        return deck[Math.floor(Math.random() * deck.length)];
+      }
+
+      // Get image/icon based on the suit
+      const getSuit = (suit) => {
+        switch (suit) {
+          case "hearts":
+            return "&hearts;";
+            break;
+          case "diamonds":
+            return "&diams;";
+            break;
+          case "clubs":
+            return "&clubs;";
+            break;
+          case "spades":
+            return "&spades;";
+            break;
+        }
+      }
+
+      var playerTotal = 0;
+      var dealerTotal = 0;
+
+      let displayPlayerTotal = document.getElementById("displayPlayerTotal");
+      let displayDealerTotal = document.getElementById("displayDealerTotal");
+
+      const setPlayerTotal = (totalCount) => {
+        playerTotal += totalCount;
+        displayPlayerTotal.innerHTML = playerTotal;
+      }
+
+      const setDealerTotal = (totalCount) => {
+        dealerTotal += totalCount;
+        displayDealerTotal.innerHTML = dealerTotal;
+      }
+
+      const changeAValue = () => {
+        playerTotal += 10;
+        displayPlayerTotal.innerHTML = playerTotal;
+      }
+
+      // To create a new card and append to parent element
+      const createNewCard = (parentElement, player, initialDeal) => {
+        let randomGeneratedCard = getRandomCard();
+        let newCard = document.createElement("div");
+        newCard.setAttribute("id", "card");
+        let span = document.createElement("span");
+        span.setAttribute("class", "cardNumber");
+        span.innerHTML = randomGeneratedCard.text;
+        newCard.appendChild(span);
+        let suitSpan = document.createElement("span");
+        suitSpan.setAttribute("class", "suit");
+        suitSpan.innerHTML = getSuit(randomGeneratedCard.suit);
+        newCard.appendChild(suitSpan);
+        parentElement.appendChild(newCard);
+        if (player == "user") {
+          setPlayerTotal(randomGeneratedCard.value);
+          // Since the default value of A is 1 except in the first deal it is valued at 11 so long as it doesn't bust - then it is valued at 1
+          if (initialDeal && (randomGeneratedCard.text == "A") && (playerTotal < 21)) {
+            changeAValue();
+          };
+        }
+        if (player == "dealer") {
+          setDealerTotal(randomGeneratedCard.value);
+        }
+      }
+
+      // creates 2 faceup cards for the player and 1 faceup card for the dealer
+      createNewCard(playerCards, "user", true);
+      createNewCard(playerCards, "user", true);
+      createNewCard(dealerCards, "dealer", true);
+
+      var actionsDiv = document.getElementById("actions");
+      var actionsHeading = document.createElement("h3");
+
+      // Messages based on player's final status
+      const WINNER_MSG = "W I N N E R !";
+      const BUST_MSG = "B U S T !";
+      const LOSER_MSG = "L O S E R !";
+
+      const setMessage = (message) => {
+        actionsHeading.innerHTML = message;
+        actionsDiv.appendChild(actionsHeading);
+      }
+
+      const checkForBust = () => {
+        if (playerTotal == 21) {
+          setMessage(WINNER_MSG);
+        }
+        if (playerTotal > 21) {
+          setMessage(BUST_MSG);
+          hitButton.setAttribute("disabled", "true");
+          stayButton.setAttribute("disabled", "true");
+        }
+      }
+
+      if (playerTotal == 21) {
+        setMessage(WINNER_MSG);
+      } else {
+        var hitButton = document.createElement("button");
+        hitButton.setAttribute("id", "hitButton");
+        hitButton.innerHTML = "Hit";
+        actionsDiv.appendChild(hitButton);
+        hitButton.addEventListener("click", () => {
+          createNewCard(playerCards, "user", false);
+          checkForBust();
+        });
+
+        var stayButton = document.createElement("button");
+        stayButton.setAttribute("id", "stayButton");
+        stayButton.innerHTML = "Stay";
+        actionsDiv.appendChild(stayButton);
+        stayButton.addEventListener("click", () => {
+          var facedownCard = document.getElementById("facedown");
+          facedownCard.remove();
+          createNewCard(dealerCards, "dealer", false);
+          if (dealerTotal < 17) {
+            createNewCard(dealerCards, "dealer", false);
+          }
+          if (dealerTotal > 21 || (playerTotal > dealerTotal)) {
+            setMessage(WINNER_MSG);
+          }
+          else {
+            setMessage(LOSER_MSG);
+          }
+        })
+
+      }
+    }
+  </script>
+</body>
+
+</html>
